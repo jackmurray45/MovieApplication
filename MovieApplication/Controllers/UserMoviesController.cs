@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -26,6 +27,7 @@ namespace MovieApplication.Views
         }
 
         // GET: UserMovies
+        [AllowAnonymous]
         [Route("")]
         public async Task<IActionResult> Index()
         {
@@ -41,6 +43,7 @@ namespace MovieApplication.Views
         }
 
         // GET: UserMovies/Details/5
+        [AllowAnonymous]
         [Route("Details")]
         public async Task<IActionResult> Details(int? id)
         {
@@ -104,20 +107,6 @@ namespace MovieApplication.Views
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
-        }
-
-
-
-        // POST: UserMovies/Delete/5
-        [Route("DeleteFavorite")]
-        [HttpGet, ActionName("DeleteFavorite")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var movie = await _context.Movies.FindAsync(id);
-            _context.Movies.Remove(movie);
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
