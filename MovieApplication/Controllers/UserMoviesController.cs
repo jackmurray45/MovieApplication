@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using MovieApplication.Data;
 using MovieApplication.Models;
 
@@ -15,16 +17,27 @@ namespace MovieApplication.Views
     {
         private readonly ApplicationDbContext _context;
 
+        private readonly UserManager<ApplicationUser> _userManager;
+
         public UserMoviesController(ApplicationDbContext context)
         {
             _context = context;
+            _userManager = _context.GetService<UserManager<ApplicationUser>>();
         }
 
         // GET: UserMovies
         [Route("")]
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Movies.ToListAsync());
+            var userFavoritesIds = _context.UserMovies.Where(u => u.UserId == _userManager.GetUserId(HttpContext.User))
+                .Select(u => u.MovieId ).ToHashSet();
+            var movies = await _context.Movies.ToListAsync();
+            var MoviesAndUsers = new MovieAndUser
+            {
+                Movies = movies,
+                UserMovies = userFavoritesIds
+            };
+            return View(MoviesAndUsers);
         }
 
         // GET: UserMovies/Details/5
@@ -50,39 +63,51 @@ namespace MovieApplication.Views
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [Route("Favorite")]
-        [HttpGet]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Year")] Movie movie)
+        //[ValidateAntiForgeryToken]
+        public async Task<IActionResult> Favorite(int id)
         {
-            if (id != movie.Id)
-            {
-                return NotFound();
-            }
-
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(movie);
+                    var userId = _userManager.GetUserId(HttpContext.User);
+                    UserMovie userMovie = new UserMovie { MovieId = id, UserId = userId };
+                    _context.Add(userMovie);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!MovieExists(movie.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    throw;
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(movie);
+            return RedirectToAction(nameof(Index));
+
         }
 
-        
+        [Route("Unfavorite")]
+        //[ValidateAntiForgeryToken]
+        public async Task<IActionResult> Unfavorite(int id)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    var userId = _userManager.GetUserId(HttpContext.User);
+
+                    _context.Remove(_context.UserMovies.Single(m => m.MovieId == id && m.UserId == userId));
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    throw;
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+
 
         // POST: UserMovies/Delete/5
         [Route("DeleteFavorite")]
