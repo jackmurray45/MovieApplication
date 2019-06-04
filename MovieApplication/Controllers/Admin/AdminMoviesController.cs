@@ -1,24 +1,33 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using MovieApplication.Areas;
 using MovieApplication.Data;
 using MovieApplication.Models;
 
 namespace MovieApplication.Controllers
 {
+    [HasPermission("Admin")]
     [Route("Admin/Movies")]
     public class AdminMoviesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly string[] _roles;
 
         public AdminMoviesController(ApplicationDbContext context)
         {
             _context = context;
+            _userManager = _context.GetService<UserManager<ApplicationUser>>();
+
         }
 
         // GET: Movies
